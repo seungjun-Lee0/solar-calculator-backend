@@ -15,7 +15,7 @@ const port = process.env.PORT || 10000;
 // Enable CORS for specific origins in production, all in development
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.ALLOWED_ORIGIN || 'https://yourdomain.com'] 
+    ? [process.env.FRONTEND_URL || 'http://localhost:5500/*'] 
     : '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
