@@ -12,16 +12,28 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Enable CORS for specific origins in production, all in development
+// Create an array of allowed origins from environment variable
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(origin => origin.trim()) 
+  : ['http://localhost:5500', 'https://solar-calculator-chi.vercel.app'];
+
+// CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL || 'http://localhost:5500/*'] 
-    : '*',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked request:', origin);
+      callback(new Error('Blocked by CORS policy'));
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // Allow requests with credentials
 }));
 
-// Handle OPTIONS requests explicitly
+// Handle preflight requests
 app.options('*', cors());
 
 // Parse JSON bodies
