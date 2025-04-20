@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+
+# env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# log files
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# directory
+dist/
+build/
+coverage/
+
+# temp files
+.DS_Store
+Thumbs.db
+.tmp/
+uploads/
+
+# editor setting
+.idea/
+.vscode/
+*.swp
+*.swo
