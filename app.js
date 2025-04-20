@@ -12,9 +12,11 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Enable CORS for all origins (for development)
+// Enable CORS for specific origins in production, all in development
 app.use(cors({
-  origin: '*',
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.ALLOWED_ORIGIN || 'https://yourdomain.com'] 
+    : '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
 }));
@@ -97,34 +99,144 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       });
     }
     
-    // Setup email transporter
+    // Setup email transporter with improved settings
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
       },
+      secure: true, // Use TLS
+      pool: true, // Enable connection pooling for efficiency
+      maxConnections: 5,
+      // Rate limiting helps comply with Gmail API limits
+      rateLimit: 5 // Max number of emails per second
     });
     
-    // Prepare email body
+    // Prepare HTML email body with improved styling matching website design
     const emailBody = `
-      <h2>New Quote Request</h2>
-      <h3>Customer Information:</h3>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
-      <p><strong>Address:</strong> ${address || 'Not provided'}</p>
-      <p><strong>Preferred Contact Method:</strong> ${contactMethod || 'Not specified'}</p>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar Quote Request</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #2c3e50; background-color: #f8f9fa;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
+    <!-- Header -->
+    <div style="background: linear-gradient(45deg, #1a3755, #3498db); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 500;">New Solar Quote Request</h1>
+    </div>
+    
+    <!-- Content -->
+    <div style="padding: 20px;">
+      <!-- Customer Information Section -->
+      <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+        <h2 style="margin-top: 0; margin-bottom: 15px; color: #1a3755; font-size: 18px; font-weight: 600;">Customer Information</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee; font-weight: 600; width: 40%;">Name:</td>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee;">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee; font-weight: 600;">Email:</td>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee;">${email}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee; font-weight: 600;">Phone:</td>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee;">${phone || 'Not provided'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee; font-weight: 600;">Address:</td>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee;">${address || 'Not provided'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee; font-weight: 600;">Preferred Contact:</td>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee;">${contactMethod || 'Not specified'}</td>
+          </tr>
+        </table>
+      </div>
       
-      <h3>System Details:</h3>
-      <p><strong>Solar Panels:</strong> ${solarPanels || 'Not calculated'}</p>
-      <p><strong>Battery:</strong> ${battery || 'Not calculated'}</p>
-      <p><strong>System Size:</strong> ${systemSize || 'Not calculated'}</p>
-      <p><strong>Daily Energy:</strong> ${dailyEnergy || 'Not calculated'}</p>
+      <!-- System Details Section -->
+      <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+        <h2 style="margin-top: 0; margin-bottom: 15px; color: #1a3755; font-size: 18px; font-weight: 600;">System Details</h2>
+        <table cellpadding="0" cellspacing="0" style="width: 100%;">
+          <tr>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Solar Panels</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${solarPanels || 'Not calculated'}</span>
+              </div>
+            </td>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Battery</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${battery || 'Not calculated'}</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 50%; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">System Size</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${systemSize || 'Not calculated'}</span>
+              </div>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Daily Energy</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${dailyEnergy || 'Not calculated'}</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
       
-      <h3>Additional Comments:</h3>
-      <p>${comments || 'No additional comments'}</p>
-    `;
+      <!-- Additional Comments Section -->
+      <div style="margin-bottom: 15px;">
+        <h2 style="margin-top: 0; margin-bottom: 15px; color: #1a3755; font-size: 18px; font-weight: 600;">Additional Comments</h2>
+        <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #eee;">
+          <p style="margin: 0; white-space: pre-line;">${comments || 'No additional comments'}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div style="padding: 15px; text-align: center; font-size: 14px; color: #7f8c8d; background-color: #f1f1f1; border-radius: 0 0 8px 8px;">
+      <p style="margin: 0;">© ${new Date().getFullYear()} Solar Quote System</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+    // Create a plain text version of the email for better deliverability
+    const plainTextBody = `
+Solar Quote Request from ${name}
+-----------------------------
+
+CUSTOMER INFORMATION:
+-----------------------------
+Name: ${name}
+Email: ${email}
+Phone: ${phone || 'Not provided'}
+Address: ${address || 'Not provided'}
+Preferred Contact: ${contactMethod || 'Not specified'}
+
+SYSTEM DETAILS:
+-----------------------------
+Solar Panels: ${solarPanels || 'Not calculated'}
+Battery: ${battery || 'Not calculated'}
+System Size: ${systemSize || 'Not calculated'}
+Daily Energy: ${dailyEnergy || 'Not calculated'}
+
+ADDITIONAL COMMENTS:
+-----------------------------
+${comments || 'No additional comments'}
+
+© ${new Date().getFullYear()} Solar Quote System
+`;
     
     // Prepare attachments for the email
     const attachments = req.files ? req.files.map(file => {
@@ -135,14 +247,28 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       };
     }) : [];
     
-    // Send email
+    // Send email with improved configuration
     const info = await transporter.sendMail({
-      from: `"Solar Quote System" <${process.env.EMAIL_USER}>`,
+      from: {
+        name: "Solar Quote System", 
+        address: process.env.EMAIL_USER
+      },
       to: process.env.RECIPIENT_EMAIL,
       cc: process.env.CC_EMAILS ? process.env.CC_EMAILS.split(',') : [],
       subject: `New Solar Quote Request from ${name}`,
       html: emailBody,
+      text: plainTextBody, // Plain text alternative version
       attachments: attachments,
+      headers: {
+        'X-Priority': '3', // Normal priority
+        'X-MSMail-Priority': 'Normal',
+        'Importance': 'Normal',
+        'X-Mailer': 'Solar Quote System Mailer'
+      },
+      // Custom Message-ID domain if configured
+      messageId: process.env.EMAIL_DOMAIN ? 
+        `<${Date.now()}.${Math.random().toString(36).substring(2, 15)}@${process.env.EMAIL_DOMAIN}>` : 
+        undefined,
     });
     
     res.json({ 
