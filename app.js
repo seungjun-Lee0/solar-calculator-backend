@@ -3,6 +3,8 @@ const multer = require('multer');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const dotenv = require('dotenv');
+// Import node-fetch for making HTTP requests
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 // Load environment variables
 dotenv.config();
@@ -46,11 +48,25 @@ app.get('/', (req, res) => {
   res.send('Solar Quote API is running');
 });
 
+// Additional health check endpoint for monitoring
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Use any() to accept any fields instead of array()
 app.post('/api/send-quote-request', upload.any(), async (req, res) => {
   try {
     console.log('Received form data:', req.body);
-    console.log('Received files:', req.files ? req.files.length : 'none');
+    
+    // More detailed file logging
+    if (req.files && req.files.length > 0) {
+      console.log(`Received files: ${req.files.length}`);
+      req.files.forEach((file, index) => {
+        console.log(`File ${index + 1}: ${file.originalname || 'unnamed'}, size: ${file.size}, mimetype: ${file.mimetype}`);
+      });
+    } else {
+      console.log('Received files: none');
+    }
     
     const { 
       name, 
@@ -61,12 +77,24 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       'solar-panels': solarPanels, 
       'battery': battery, 
       'system-size': systemSize, 
-      'daily-energy': dailyEnergy 
+      'daily-energy': dailyEnergy,
+      'contact-method': contactMethod
     } = req.body;
     
-    // Validate required fields
-    if (!name || !email || !phone) {
-      return res.status(400).json({ success: false, message: 'Name, email, and phone are required' });
+    // Updated validation: Only require name and email
+    // Make phone required only if phone contact method is selected
+    if (!name || !email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Name and email are required' 
+      });
+    }
+    
+    if (contactMethod === 'phone' && !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required when phone contact method is selected'
+      });
     }
     
     // Setup email transporter
@@ -84,8 +112,9 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       <h3>Customer Information:</h3>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
       <p><strong>Address:</strong> ${address || 'Not provided'}</p>
+      <p><strong>Preferred Contact Method:</strong> ${contactMethod || 'Not specified'}</p>
       
       <h3>System Details:</h3>
       <p><strong>Solar Panels:</strong> ${solarPanels || 'Not calculated'}</p>
@@ -140,7 +169,33 @@ app.use((err, req, res, next) => {
   });
 });
 
+/**
+ * Function to prevent Render from shutting down the server after 15 minutes of inactivity
+ * This sends a ping to the server every 14 minutes to keep it alive
+ */
+function keepAlive() {
+  // Server URL (self)
+  const url = process.env.SERVER_URL || 'https://solar-calculator-backend.onrender.com';
+  
+  // Send a ping every 14 minutes (just under the 15-minute Render timeout)
+  setInterval(() => {
+    fetch(url)
+      .then(response => {
+        console.log(`Keep-alive ping sent at ${new Date().toISOString()}, status: ${response.status}`);
+      })
+      .catch(error => {
+        console.error(`Keep-alive ping failed: ${error.message}`);
+      });
+  }, 14 * 60 * 1000); // 14 minutes in milliseconds
+}
+
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  
+  // Enable keep-alive if the environment variable is set to true
+  if (process.env.KEEP_ALIVE === 'true') {
+    keepAlive();
+    console.log('Keep-alive service started to prevent Render from shutting down');
+  }
 });
