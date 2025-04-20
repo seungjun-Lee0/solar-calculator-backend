@@ -10,18 +10,23 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Enable CORS for frontend requests
+// Enable CORS for all origins (for development)
 app.use(cors({
-  origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : '*',
-  methods: ['GET', 'POST'],
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
 }));
+
+// Handle OPTIONS requests explicitly
+app.options('*', cors());
 
 // Parse JSON bodies
 app.use(express.json());
 
 // Use memory storage for file uploads
 const storage = multer.memoryStorage();
+
+// Create multer instance without field filtering
 const upload = multer({
   storage: storage,
   limits: {
@@ -41,9 +46,12 @@ app.get('/', (req, res) => {
   res.send('Solar Quote API is running');
 });
 
-// API endpoint for sending quote requests
-app.post('/api/send-quote-request', upload.array('image', 5), async (req, res) => {
+// Use any() to accept any fields instead of array()
+app.post('/api/send-quote-request', upload.any(), async (req, res) => {
   try {
+    console.log('Received form data:', req.body);
+    console.log('Received files:', req.files ? req.files.length : 'none');
+    
     const { 
       name, 
       email, 
@@ -92,7 +100,7 @@ app.post('/api/send-quote-request', upload.array('image', 5), async (req, res) =
     // Prepare attachments for the email
     const attachments = req.files ? req.files.map(file => {
       return {
-        filename: file.originalname,
+        filename: file.originalname || `image.${file.mimetype.split('/')[1]}`,
         content: file.buffer,
         contentType: file.mimetype
       };
@@ -125,7 +133,7 @@ app.post('/api/send-quote-request', upload.array('image', 5), async (req, res) =
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Global error handler:', err.stack);
   res.status(500).json({ 
     success: false, 
     message: err.message || 'Something went wrong!' 
