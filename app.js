@@ -95,20 +95,37 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       'contact-method': contactMethod
     } = req.body;
     
-    // Updated validation: Only require name and email
-    // Make phone required only if phone contact method is selected
-    if (!name || !email) {
+    // Validate name - always required
+    if (!name) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Name and email are required' 
+        message: 'Name is required' 
       });
     }
     
-    if (contactMethod === 'phone' && !phone) {
-      return res.status(400).json({
-        success: false,
-        message: 'Phone number is required when phone contact method is selected'
-      });
+    // Validate contact information based on contact method
+    if (contactMethod === 'email') {
+      if (!email) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Email is required when email contact method is selected' 
+        });
+      }
+    } else if (contactMethod === 'phone' || contactMethod === 'sms') {
+      if (!phone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number is required when phone or SMS contact method is selected'
+        });
+      }
+    } else {
+      // If no contact method is specified, require at least one contact method
+      if (!email && !phone) {
+        return res.status(400).json({
+          success: false,
+          message: 'At least one contact method (email or phone) is required'
+        });
+      }
     }
     
     // Setup email transporter with improved settings
@@ -153,7 +170,7 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
           </tr>
           <tr>
             <td style="padding: 8px 10px; border-bottom: 1px solid #eee; font-weight: 600;">Email:</td>
-            <td style="padding: 8px 10px; border-bottom: 1px solid #eee;">${email}</td>
+            <td style="padding: 8px 10px; border-bottom: 1px solid #eee;">${email || 'Not provided'}</td>
           </tr>
           <tr>
             <td style="padding: 8px 10px; border-bottom: 1px solid #eee; font-weight: 600;">Phone:</td>
@@ -216,6 +233,9 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
     
     <!-- Footer -->
     <div style="padding: 15px; text-align: center; font-size: 14px; color: #7f8c8d; background-color: #f1f1f1; border-radius: 0 0 8px 8px;">
+      <div style="margin-bottom: 10px;">
+        <img src="https://tepng.com/wp-content/uploads/2022/02/logo.png" alt="TEPNG Logo" style="max-width: 120px; height: auto;">
+      </div>
       <p style="margin: 0;">© ${new Date().getFullYear()} Solar Quote System</p>
     </div>
   </div>
@@ -231,7 +251,7 @@ Solar Quote Request from ${name}
 CUSTOMER INFORMATION:
 -----------------------------
 Name: ${name}
-Email: ${email}
+Email: ${email || 'Not provided'}
 Phone: ${phone || 'Not provided'}
 Address: ${address || 'Not provided'}
 Preferred Contact: ${contactMethod || 'Not specified'}
