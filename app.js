@@ -82,6 +82,7 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       console.log('Received files: none');
     }
     
+    // Extract form data (including all possible fields from different calculator modes)
     const { 
       name, 
       email, 
@@ -92,8 +93,30 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       'battery': battery, 
       'system-size': systemSize, 
       'daily-energy': dailyEnergy,
-      'contact-method': contactMethod
+      'contact-method': contactMethod,
+      // Advanced mode specific fields
+      'system-type': systemType,
+      'orientation': orientation,
+      'annual-output': annualOutput,
+      'monthly-savings': monthlySavings,
+      'daily-usage': dailyUsage,
+      'electric-bill': electricBill,
+      'tilt': tilt,
+      'location-coordinates': locationCoordinates,
+      'purchase-timeline': purchaseTimeline
     } = req.body;
+    
+    // Detect calculator mode based on received fields
+    let calculatorMode = 'unknown';
+    if (systemType && orientation && tilt) {
+      calculatorMode = 'advanced';
+    } else if (solarPanels && battery) {
+      calculatorMode = 'basic';
+    } else {
+      calculatorMode = 'simple';
+    }
+    
+    console.log(`Detected calculator mode: ${calculatorMode}`);
     
     // Validate name - always required
     if (!name) {
@@ -142,7 +165,134 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       rateLimit: 5 // Max number of emails per second
     });
     
-    // Prepare HTML email body with improved styling matching website design
+    // Create a more detailed system details table based on calculator mode
+    let systemDetailsHTML = '';
+    
+    if (calculatorMode === 'advanced') {
+      // Advanced mode system details section
+      systemDetailsHTML = `
+        <h2 style="margin-top: 0; margin-bottom: 15px; color: #1a3755; font-size: 18px; font-weight: 600;">System Details (Advanced)</h2>
+        <table cellpadding="0" cellspacing="0" style="width: 100%;">
+          <tr>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">System Type</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${systemType || 'Not specified'}</span>
+              </div>
+            </td>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Panel Orientation</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${orientation || 'Not specified'}</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">System Size</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${systemSize || 'Not calculated'}</span>
+              </div>
+            </td>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Annual Output</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${annualOutput || 'Not calculated'}</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Monthly Savings</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${monthlySavings || 'Not calculated'}</span>
+              </div>
+            </td>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Daily Usage</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${dailyUsage || 'Not specified'}</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Monthly Electric Bill</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${electricBill || 'Not specified'}</span>
+              </div>
+            </td>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Location Coordinates</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${locationCoordinates || 'Not specified'}</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Panel Tilt</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${tilt || 'Not specified'}</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+      `;
+    } else {
+      // Simple/Basic mode system details section
+      systemDetailsHTML = `
+        <h2 style="margin-top: 0; margin-bottom: 15px; color: #1a3755; font-size: 18px; font-weight: 600;">System Details (${calculatorMode.charAt(0).toUpperCase() + calculatorMode.slice(1)})</h2>
+        <table cellpadding="0" cellspacing="0" style="width: 100%;">
+          <tr>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Solar Panels</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${solarPanels || 'Not calculated'}</span>
+              </div>
+            </td>
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Battery</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${battery || 'Not calculated'}</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 50%; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">System Size</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${systemSize || 'Not calculated'}</span>
+              </div>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
+                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Daily Energy</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${dailyEnergy || 'Not calculated'}</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+      `;
+    }
+    
+    // Generate additional information section for advanced mode
+    let additionalInfoHTML = '';
+    if (calculatorMode === 'advanced') {
+      additionalInfoHTML = `
+        <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+          <h2 style="margin-top: 0; margin-bottom: 15px; color: #1a3755; font-size: 18px; font-weight: 600;">Installation Preferences</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 10px; border-bottom: 1px solid #eee; font-weight: 600; width: 40%;">Purchase Timeline:</td>
+              <td style="padding: 8px 10px; border-bottom: 1px solid #eee;">${purchaseTimeline || 'Not specified'}</td>
+            </tr>
+          </table>
+        </div>
+      `;
+    }
+    
+    // Prepare HTML email body with improved styling matching website design and conditionals for calculator mode
     const emailBody = `
 <!DOCTYPE html>
 <html>
@@ -155,7 +305,7 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
   <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);">
     <!-- Header -->
     <div style="background: linear-gradient(45deg, #1a3755, #3498db); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-      <h1 style="margin: 0; font-size: 24px; font-weight: 500;">New Solar Quote Request</h1>
+      <h1 style="margin: 0; font-size: 24px; font-weight: 500;">New Solar Quote Request (${calculatorMode.charAt(0).toUpperCase() + calculatorMode.slice(1)} Mode)</h1>
     </div>
     
     <!-- Content -->
@@ -187,40 +337,13 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
         </table>
       </div>
       
-      <!-- System Details Section -->
+      <!-- System Details Section - Dynamic based on calculator mode -->
       <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
-        <h2 style="margin-top: 0; margin-bottom: 15px; color: #1a3755; font-size: 18px; font-weight: 600;">System Details</h2>
-        <table cellpadding="0" cellspacing="0" style="width: 100%;">
-          <tr>
-            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
-              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
-                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Solar Panels</span>
-                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${solarPanels || 'Not calculated'}</span>
-              </div>
-            </td>
-            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
-              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
-                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Battery</span>
-                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${battery || 'Not calculated'}</span>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style="width: 50%; vertical-align: top;">
-              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
-                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">System Size</span>
-                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${systemSize || 'Not calculated'}</span>
-              </div>
-            </td>
-            <td style="width: 50%; vertical-align: top;">
-              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
-                <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Daily Energy</span>
-                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${dailyEnergy || 'Not calculated'}</span>
-              </div>
-            </td>
-          </tr>
-        </table>
+        ${systemDetailsHTML}
       </div>
+      
+      <!-- Additional Information Section (Advanced mode only) -->
+      ${additionalInfoHTML}
       
       <!-- Additional Comments Section -->
       <div style="margin-bottom: 15px;">
@@ -244,8 +367,23 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
 `;
 
     // Create a plain text version of the email for better deliverability
+    let plainTextAdditionalFields = '';
+    if (calculatorMode === 'advanced') {
+      plainTextAdditionalFields = `
+System Type: ${systemType || 'Not specified'}
+Panel Orientation: ${orientation || 'Not specified'}
+Annual Output: ${annualOutput || 'Not calculated'}
+Monthly Savings: ${monthlySavings || 'Not calculated'}
+Daily Usage: ${dailyUsage || 'Not specified'}
+Monthly Electric Bill: ${electricBill || 'Not specified'}
+Location Coordinates: ${locationCoordinates || 'Not specified'}
+Panel Tilt: ${tilt || 'Not specified'}
+Purchase Timeline: ${purchaseTimeline || 'Not specified'}
+`;
+    }
+    
     const plainTextBody = `
-Solar Quote Request from ${name}
+Solar Quote Request from ${name} (${calculatorMode.charAt(0).toUpperCase() + calculatorMode.slice(1)} Mode)
 -----------------------------
 
 CUSTOMER INFORMATION:
@@ -258,10 +396,11 @@ Preferred Contact: ${contactMethod || 'Not specified'}
 
 SYSTEM DETAILS:
 -----------------------------
-Solar Panels: ${solarPanels || 'Not calculated'}
+${calculatorMode === 'advanced' ? plainTextAdditionalFields : 
+`Solar Panels: ${solarPanels || 'Not calculated'}
 Battery: ${battery || 'Not calculated'}
 System Size: ${systemSize || 'Not calculated'}
-Daily Energy: ${dailyEnergy || 'Not calculated'}
+Daily Energy: ${dailyEnergy || 'Not calculated'}`}
 
 ADDITIONAL COMMENTS:
 -----------------------------
@@ -287,7 +426,7 @@ ${comments || 'No additional comments'}
       },
       to: process.env.RECIPIENT_EMAIL,
       cc: process.env.CC_EMAILS ? process.env.CC_EMAILS.split(',') : [],
-      subject: `New Solar Quote Request from ${name}`,
+      subject: `New Solar Quote Request from ${name} (${calculatorMode.charAt(0).toUpperCase() + calculatorMode.slice(1)} Mode)`,
       html: emailBody,
       text: plainTextBody, // Plain text alternative version
       attachments: attachments,
