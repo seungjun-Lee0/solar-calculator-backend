@@ -230,7 +230,7 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
             </td>
           </tr>
           <tr>
-            <td style="width: 100%; padding-bottom: 15px; vertical-align: top;">
+            <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
               <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; border: 1px solid #eee;">
                 <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Panel Tilt</span>
                 <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${tilt || 'Not specified'}</span>
