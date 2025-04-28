@@ -96,31 +96,21 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       'contact-method': contactMethod,
       // Advanced mode specific fields
       'system-type': systemType,
-      'system-type-input': systemTypeInput,
-      orientation,
+      'orientation': orientation,
       'annual-output': annualOutput,
       'monthly-savings': monthlySavings,
       'daily-usage': dailyUsage,
-      'daily-usage-input': dailyUsageInput,
       'electric-bill': electricBill,
-      'electric-bill-input': electricBillInput,
-      tilt,
-      'tilt-input': tiltInput,
+      'tilt': tilt,
       'location-coordinates': locationCoordinates,
       'purchase-timeline': purchaseTimeline
     } = req.body;
     
-    // Use values from either field name variants
-    const finalSystemType = systemType || systemTypeInput;
-    const finalDailyUsage = dailyUsage || dailyUsageInput;
-    const finalElectricBill = electricBill || electricBillInput;
-    const finalTilt = tilt || tiltInput;
-    
     // Detect calculator mode based on received fields
     let calculatorMode = 'unknown';
-    if (finalSystemType || orientation || finalTilt) {
+    if (systemType && orientation && tilt) {
       calculatorMode = 'advanced';
-    } else if (solarPanels || battery) {
+    } else if (solarPanels && battery) {
       calculatorMode = 'basic';
     } else {
       calculatorMode = 'simple';
@@ -187,7 +177,7 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
             <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
               <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
                 <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">System Type</span>
-                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${finalSystemType || 'Not specified'}</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${systemType || 'Not specified'}</span>
               </div>
             </td>
             <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
@@ -221,7 +211,7 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
             <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
               <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
                 <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Daily Usage</span>
-                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${finalDailyUsage || 'Not specified'}</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${dailyUsage || 'Not specified'}</span>
               </div>
             </td>
           </tr>
@@ -229,7 +219,7 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
             <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
               <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
                 <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Monthly Electric Bill</span>
-                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${finalElectricBill || 'Not specified'}</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${electricBill || 'Not specified'}</span>
               </div>
             </td>
             <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
@@ -241,9 +231,9 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
           </tr>
           <tr>
             <td style="width: 50%; padding-bottom: 15px; vertical-align: top;">
-              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-right: 8px; border: 1px solid #eee;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-left: 8px; border: 1px solid #eee;">
                 <span style="display: block; font-size: 13px; color: #7f8c8d; margin-bottom: 4px;">Panel Tilt</span>
-                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${finalTilt || 'Not specified'}</span>
+                <span style="display: block; font-weight: 600; color: #34495e; font-size: 16px;">${tilt || 'Not specified'}</span>
               </div>
             </td>
           </tr>
@@ -380,14 +370,14 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
     let plainTextAdditionalFields = '';
     if (calculatorMode === 'advanced') {
       plainTextAdditionalFields = `
-System Type: ${finalSystemType || 'Not specified'}
+System Type: ${systemType || 'Not specified'}
 Panel Orientation: ${orientation || 'Not specified'}
 Annual Output: ${annualOutput || 'Not calculated'}
 Monthly Savings: ${monthlySavings || 'Not calculated'}
-Daily Usage: ${finalDailyUsage || 'Not specified'}
-Monthly Electric Bill: ${finalElectricBill || 'Not specified'}
+Daily Usage: ${dailyUsage || 'Not specified'}
+Monthly Electric Bill: ${electricBill || 'Not specified'}
 Location Coordinates: ${locationCoordinates || 'Not specified'}
-Panel Tilt: ${finalTilt || 'Not specified'}
+Panel Tilt: ${tilt || 'Not specified'}
 Purchase Timeline: ${purchaseTimeline || 'Not specified'}
 `;
     }
