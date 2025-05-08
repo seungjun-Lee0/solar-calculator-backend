@@ -111,9 +111,9 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
     if (systemType && orientation && tilt) {
       calculatorMode = 'advanced';
     } else if (solarPanels && battery) {
-      calculatorMode = 'basic';
+      calculatorMode = 'standard';
     } else {
-      calculatorMode = 'simple';
+      calculatorMode = 'assistive';
     }
     
     console.log(`Detected calculator mode: ${calculatorMode}`);
@@ -240,7 +240,7 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
         </table>
       `;
     } else {
-      // Simple/Basic mode system details section
+      // Assistive/Standard mode system details section
       systemDetailsHTML = `
         <h2 style="margin-top: 0; margin-bottom: 15px; color: #1a3755; font-size: 18px; font-weight: 600;">System Details (${calculatorMode.charAt(0).toUpperCase() + calculatorMode.slice(1)})</h2>
         <table cellpadding="0" cellspacing="0" style="width: 100%;">
