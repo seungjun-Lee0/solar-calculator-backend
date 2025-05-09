@@ -103,17 +103,22 @@ app.post('/api/send-quote-request', upload.any(), async (req, res) => {
       'electric-bill': electricBill,
       'tilt': tilt,
       'location-coordinates': locationCoordinates,
-      'purchase-timeline': purchaseTimeline
+      'purchase-timeline': purchaseTimeline,
+      'calculator-mode': clientCalculatorMode
     } = req.body;
     
     // Detect calculator mode based on received fields
-    let calculatorMode = 'unknown';
-    if (systemType && orientation && tilt) {
-      calculatorMode = 'advanced';
-    } else if (solarPanels && battery) {
-      calculatorMode = 'standard';
-    } else {
-      calculatorMode = 'assistive';
+    let calculatorMode = clientCalculatorMode || 'unknown';
+    
+    // Fallback detection if client didn't send the mode
+    if (!calculatorMode || calculatorMode === 'unknown') {
+      if (systemType && orientation && tilt) {
+        calculatorMode = 'advanced';
+      } else if (solarPanels && battery) {
+        calculatorMode = 'standard';
+      } else {
+        calculatorMode = 'assistive';
+      }
     }
     
     console.log(`Detected calculator mode: ${calculatorMode}`);
