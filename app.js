@@ -15,7 +15,12 @@ const port = process.env.PORT || 10000;
 // Create an array of allowed origins from environment variable
 const allowedOrigins = process.env.FRONTEND_URL 
   ? process.env.FRONTEND_URL.split(',').map(origin => origin.trim()) 
-  : ['http://localhost:5500', 'https://solar-calculator-chi.vercel.app'];
+  : [
+      'http://localhost:5500',
+      'https://solar-calculator-chi.vercel.app',
+      'https://tepng.com',
+      'https://www.tepng.com'
+    ];
 
 // CORS configuration
 app.use(cors({
